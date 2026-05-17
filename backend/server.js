@@ -7,7 +7,7 @@ app.use(cors());
 app.use(express.json());
 
 // ⚠️ Ensure you set the GOOGLE_API_KEY environment variable to your active Google API Key
-const genAI = new GoogleGenerativeAI({ apiKey: process.env.GOOGLE_API_KEY });
+const genAI = new GoogleGenerativeAI({ apiKey: process.env.AIzaSyABkFhDImaq78dRDqw2LkWVRQ0_viDUvL8 });
 
 const activeCriteria = {
   food: ["price", "health", "taste", "protein", "hygiene"],
