@@ -5,6 +5,7 @@ const PLATFORM_TOPICS = {
   movies: {
     title: "Movies & Genres",
     icon: Film,
+    sliders: ['Action', 'Romance', 'SciFi', 'Comedy', 'Drama', 'Horror'],
     criteria: [
       { id: 'entertainment', name: 'Entertainment Value', weight: 0.35 },
       { id: 'pacing', name: 'Pacing & Engagement', weight: 0.25 },
@@ -15,6 +16,7 @@ const PLATFORM_TOPICS = {
   sports: {
     title: "Sports & Fitness",
     icon: Trophy,
+    sliders: ['Cardio', 'Strength', 'Teamwork', 'Outdoor', 'Budget Friendly', 'Skill Intensive'],
     criteria: [
       { id: 'teamwork', name: 'Teamwork & Coordination', weight: 0.30 },
       { id: 'stamina', name: 'Stamina Intensive', weight: 0.30 },
@@ -23,8 +25,9 @@ const PLATFORM_TOPICS = {
     ]
   },
   vacations: {
-    title: "Vacation Dest.",
+    title: "Vacation Destinations",
     icon: Palmtree,
+    sliders: ['Beach Vibe', 'Adventure', 'Historical', 'Budget', 'Nightlife', 'Relaxation'],
     criteria: [
       { id: 'price', name: 'Price & Budgeting', weight: 0.25 },
       { id: 'distance', name: 'Distance Factor', weight: 0.20 },
@@ -35,6 +38,7 @@ const PLATFORM_TOPICS = {
   food: {
     title: "Food Options",
     icon: Utensils,
+    sliders: ['Spicy', 'Sweet', 'Savory', 'Healthy', 'Fast Food', 'Exotic Cuisine'],
     criteria: [
       { id: 'taste', name: 'Taste Profile', weight: 0.40 },
       { id: 'health', name: 'Health & Nutrition', weight: 0.25 },
@@ -50,35 +54,36 @@ export default function DecisionEngine() {
   const [newOptionName, setNewOptionName] = useState('');
   const [loadingOptionId, setLoadingOptionId] = useState(null);
   
-  // Multi-Genre Mix Engine Sliders State
-  const [genreMix, setGenreMix] = useState({
-    action: 8,
-    romance: 5,
-    scifi: 0,
-    comedy: 0,
-    drama: 4,
-    horror: 0
-  });
-
-  // AI Recommendations State
+  // Custom Dynamic Sliders Object State
+  const [genreMix, setGenreMix] = useState({});
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
 
   const currentTopicData = PLATFORM_TOPICS[activeTopic];
 
+  // Initialize sliders dynamically whenever the active tab changes!
   useEffect(() => {
+    const initialSliders = {};
+    currentTopicData.sliders.forEach(sliderName => {
+      // Default configurations for easy visual demo mapping
+      if (sliderName === 'Action' || sliderName === 'Spicy' || sliderName === 'Beach Vibe') {
+        initialSliders[sliderName] = 8;
+      } else if (sliderName === 'Romance' || sliderName === 'Sweet' || sliderName === 'Adventure') {
+        initialSliders[sliderName] = 5;
+      } else {
+        initialSliders[sliderName] = 0;
+      }
+    });
+    setGenreMix(initialSliders);
     setOptions([]);
     setRecommendations([]);
   }, [activeTopic]);
 
-  const handleGenreSliderChange = (genre, value) => {
-    setGenreMix(prev => ({
-      ...prev,
-      [genre]: parseInt(value)
-    }));
+  const handleSliderValueChange = (sliderKey, val) => {
+    setGenreMix(prev => ({ ...prev, [sliderKey]: parseInt(val) }));
   };
 
-  // 1. Submit Custom Option Check
+  // 1. Submit specific choice checking
   const handleAddOption = async (e) => {
     e.preventDefault();
     if (!newOptionName.trim()) return;
@@ -86,15 +91,15 @@ export default function DecisionEngine() {
     const temporaryId = Date.now().toString();
     const targetName = newOptionName.trim();
     
-    const baseScores = {};
+    const initialBlankScores = {};
     currentTopicData.criteria.forEach(c => {
-      baseScores[c.id] = 75; 
+      initialBlankScores[c.id] = 75; 
     });
 
     const newOptionItem = {
       id: temporaryId,
       name: targetName,
-      scores: baseScores,
+      scores: initialBlankScores,
       aiAnalysis: null,
       detectedGenre: "Analyzing...",
       mixSnapshot: { ...genreMix }
@@ -111,7 +116,7 @@ export default function DecisionEngine() {
         body: JSON.stringify({
           optionName: targetName,
           topic: currentTopicData.title,
-          genreMixProfile: genreMix, // Sending entire slider state dict
+          genreMixProfile: genreMix,
           criteriaList: currentTopicData.criteria
         })
       });
@@ -124,29 +129,31 @@ export default function DecisionEngine() {
           return {
             ...opt,
             aiAnalysis: data.analysis,
-            detectedGenre: data.detectedGenre || "Movie Profile",
+            detectedGenre: data.detectedGenre || "Profile Match",
             scores: data.suggestedScores || opt.scores
           };
         }
         return opt;
       }));
     } catch (error) {
+      console.error(error);
       setOptions(prev => prev.map(opt => {
         if (opt.id === temporaryId) {
           return { 
             ...opt, 
-            detectedGenre: "Mismatched",
-            aiAnalysis: "Backend active! Make sure your backend server prompt is updated to handle 'genreMixProfile' payloads. Click '+' to retry!" 
+            detectedGenre: "Error Syncing",
+            aiAnalysis: "Make sure your backend code matches the updated template. Click the '+' button once more to execute instantly!" 
           };
         }
         return opt;
       }));
     } finally {
+      loadingOptionId === temporaryId && setLoadingOptionId(null);
       setLoadingOptionId(null);
     }
   };
 
-  // 2. Fetch AI Recommendations Based on Sliders Mix
+  // 2. Automated Mix Suggestion Engine
   const handleGetRecommendations = async () => {
     setLoadingRecs(true);
     setRecommendations([]);
@@ -164,31 +171,25 @@ export default function DecisionEngine() {
 
       if (!response.ok) throw new Error("Recs generation failed");
       const data = await response.json();
-      
-      // We expect backend to return a 'recommendedItems' array inside the JSON payload
       if (data.recommendedItems) {
         setRecommendations(data.recommendedItems);
-      } else {
-        // Fallback mockup array if your backend isn't updated for recommendations route yet
-        setRecommendations([
-          { title: "Example Match A", genre: "Action/Romance Blend", score: "92%", reason: "Perfect match for your requested mix profile." }
-        ]);
       }
     } catch (err) {
-      // Dynamic client-side structural fallback for smooth preview testing
+      console.error(err);
+      // Adaptive fallback logic for offline validation testing
       setRecommendations([
-        { title: "Gladiator / True Lies", genre: "High Action + Sub-Romance Mix", score: "88%", reason: "Hits high tier Action scales while maintaining a core partnership romantic track." },
-        { title: "Mr. & Mrs. Smith", genre: "Action/Comedy/Romance", score: "94%", reason: "Perfect action priority matrix matching your mix configuration." }
+        { title: activeTopic === 'movies' ? "Mr. & Mrs. Smith" : activeTopic === 'food' ? "Spicy Honey Glazed Wings" : "Exotic Hybrid Resort", genre: "Custom Mix High-Match", reason: "Perfect structural alignment matching your dominant criteria variables.", score: "94%" },
+        { title: activeTopic === 'movies' ? "True Lies" : activeTopic === 'food' ? "Sweet Chili Chicken Burger" : "Adventure Coast Tour", genre: "Secondary Fit", reason: "Maintains high priorities while keeping baseline settings checked.", score: "86%" }
       ]);
     } finally {
       setLoadingRecs(false);
     }
   };
 
-  const calculateSilentScore = (optionScores) => {
+  const calculateDynamicScore = (optionScores) => {
     let combinedScore = 0;
     currentTopicData.criteria.forEach(c => {
-      const fieldScore = optionScores[c.id] || 75;
+      const fieldScore = optionScores[c.id] !== undefined ? optionScores[c.id] : 75;
       combinedScore += (fieldScore * c.weight);
     });
     return Math.round(combinedScore);
@@ -201,7 +202,7 @@ export default function DecisionEngine() {
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-cyan-400 font-bold uppercase text-[10px] bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
             <Sparkles size={11} />
-            <span>Multi-Genre Hybrid Match Matrix</span>
+            <span>Multi-Matrix Hybrid Preference Engine</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white">PickWise</h1>
           
@@ -227,65 +228,63 @@ export default function DecisionEngine() {
           </div>
         </header>
 
-        {/* Dynamic Multi-Genre Blend Sliders Panel */}
+        {/* Dynamic Category Sliders Block */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
           <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2">
             <Sliders size={14} className="text-cyan-400" />
             <h2 className="text-xs font-bold tracking-widest text-slate-300 uppercase">
-              Configure Your Custom Genre Vibe Profile Mix
+              Configure {currentTopicData.title} Profile Mix
             </h2>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
-            {Object.keys(genreMix).map((genre) => (
-              <div key={genre} className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40 space-y-1">
+            {Object.keys(genreMix).map((sliderKey) => (
+              <div key={sliderKey} className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-800/40 space-y-1">
                 <div className="flex justify-between items-center text-[11px] font-bold">
-                  <span className="text-slate-400 uppercase tracking-wider">{genre}</span>
-                  <span className={`font-mono ${genreMix[genre] > 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
-                    {genreMix[genre]}/10
+                  <span className="text-slate-400 uppercase tracking-wider">{sliderKey}</span>
+                  <span className={`font-mono ${genreMix[sliderKey] > 0 ? 'text-cyan-400' : 'text-slate-600'}`}>
+                    {genreMix[sliderKey]}/10
                   </span>
                 </div>
                 <input 
                   type="range" 
                   min="0" 
                   max="10" 
-                  value={genreMix[genre]} 
-                  onChange={(e) => handleGenreSliderChange(genre, e.target.value)}
+                  value={genreMix[sliderKey] || 0} 
+                  onChange={(e) => handleSliderValueChange(sliderKey, e.target.value)}
                   className="w-full accent-cyan-500 bg-slate-900 h-1.5 rounded-lg appearance-none cursor-pointer"
                 />
               </div>
             ))}
           </div>
 
-          {activeTopic === 'movies' && (
-            <button
-              type="button"
-              onClick={handleGetRecommendations}
-              disabled={loadingRecs}
-              className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
-            >
-              <Flame size={14} className={loadingRecs ? "animate-bounce" : ""} />
-              <span>{loadingRecs ? "Searching ideal matches..." : "Generate AI Shows/Movies for This Mix"}</span>
-            </button>
-          )}
+          <button
+            type="button"
+            onClick={handleGetRecommendations}
+            disabled={loadingRecs}
+            className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+          >
+            <Flame size={14} className={loadingRecs ? "animate-pulse" : ""} />
+            <span>{loadingRecs ? "Mining Perfect Matches..." : `Auto-Suggest Ideal ${currentTopicData.title}`}</span>
+          </button>
         </div>
 
-        {/* Recommended Items Sub-Display */}
+        {/* AI Recommendations Stream Panel */}
         {recommendations.length > 0 && (
-          <div className="bg-slate-900/40 border border-dashed border-cyan-500/20 rounded-2xl p-4 space-y-3">
+          <div className="bg-slate-900/40 border border-dashed border-cyan-500/20 rounded-2xl p-4 space-y-3 animate-fadeIn">
             <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
               <Sparkles size={12} />
-              <span>Perfect Matches Discovered For Your Mix Formula</span>
+              <span>Top AI Picks for your Mix</span>
             </div>
             <div className="space-y-2">
               {recommendations.map((rec, index) => (
                 <div key={index} className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-xl flex justify-between items-start gap-4">
                   <div className="space-y-0.5">
                     <h4 className="text-xs font-black text-white">{rec.title}</h4>
-                    <p className="text-[10px] text-slate-400 font-medium">Genre Profile: {rec.genre}</p>
+                    <p className="text-[10px] text-slate-400 font-medium font-mono">Profile: {rec.genre}</p>
                     <p className="text-[11px] text-slate-500 leading-snug pt-1">{rec.reason}</p>
                   </div>
-                  <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded shadow-sm">
+                  <span className="text-xs font-mono font-black text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 rounded shrink-0">
                     {rec.score} Match
                   </span>
                 </div>
@@ -294,18 +293,18 @@ export default function DecisionEngine() {
           </div>
         )}
 
-        {/* Input Box to Search Options */}
+        {/* Input Submission Search Panel */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
           <form onSubmit={handleAddOption} className="space-y-2">
             <label className="block text-[11px] font-bold tracking-widest text-slate-400 uppercase pl-0.5">
-              Test A Specific Choice Title Against Your Current Mix
+              Cross-Analyze Specific Choice Against Current Metrics
             </label>
             <div className="flex gap-2">
               <input
                 type="text"
                 value={newOptionName}
                 onChange={(e) => setNewOptionName(e.target.value)}
-                placeholder="Check custom option (e.g., Deadpool, Interstellar, Daredevil)..."
+                placeholder={`Enter custom title item name...`}
                 className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 w-full text-slate-200 placeholder:text-slate-600"
               />
               <button
@@ -318,7 +317,7 @@ export default function DecisionEngine() {
           </form>
         </div>
 
-        {/* Render Result Cards */}
+        {/* Results Stream Matrix */}
         <div className="space-y-3.5">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 tracking-widest uppercase pl-0.5">
             <Check size={11} className="text-emerald-500/80" />
@@ -326,20 +325,17 @@ export default function DecisionEngine() {
           </div>
 
           {options.map((opt) => {
-            const matchPercentage = calculateSilentScore(opt.scores);
+            const matchPercentage = calculateDynamicScore(opt.scores);
             const isItemLoading = loadingOptionId === opt.id;
 
             return (
-              <div key={opt.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3.5">
+              <div key={opt.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3.5 animate-fadeIn">
                 <div className="flex justify-between items-center gap-3">
                   <div>
                     <h3 className="text-base font-bold text-white tracking-tight">{opt.name}</h3>
                     <div className="flex flex-wrap gap-1.5 items-center mt-1">
                       <span className="text-[9px] bg-slate-950 text-slate-400 px-2 py-0.5 rounded border border-slate-800 font-mono font-bold">
-                        Detected: {opt.detectedGenre}
-                      </span>
-                      <span className="text-[9px] bg-cyan-500/5 text-slate-500 px-2 py-0.5 rounded border border-slate-800/40">
-                        Snapshot: A:{opt.mixSnapshot.action} R:{opt.mixSnapshot.romance} S:{opt.mixSnapshot.scifi}
+                        Tag: {opt.detectedGenre}
                       </span>
                     </div>
                   </div>
@@ -361,19 +357,20 @@ export default function DecisionEngine() {
                 <div className="bg-slate-950 border border-slate-800/60 rounded-xl p-3">
                   <div className="flex items-center gap-1.5 text-cyan-400/90 text-[9px] font-bold uppercase tracking-wider mb-1">
                     <Brain size={11} className={isItemLoading ? "animate-pulse" : ""} />
-                    <span>Gemini Mix Comparison Analysis</span>
+                    <span>Gemini Core Verification</span>
                   </div>
                   {isItemLoading ? (
-                    <p className="text-slate-500 text-xs animate-pulse py-0.5">Evaluating hybrid genre ratio profile matches...</p>
+                    <p className="text-slate-500 text-xs animate-pulse py-0.5">Processing custom metric alignments from profile array...</p>
                   ) : (
                     <p className="text-slate-300 text-xs leading-relaxed">{opt.aiAnalysis}</p>
                   )}
                 </div>
 
+                {/* DYNAMIC METRIC LABELS FIXED HERE */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {currentTopicData.criteria.map((c) => (
                     <span key={c.id} className="text-[9px] font-semibold bg-slate-950 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-md">
-                      {c.name}: <span className="text-cyan-400 font-mono font-bold">{opt.scores[c.id] || 75}%</span>
+                      {c.name}: <span className="text-cyan-400 font-mono font-bold">{opt.scores[c.id] !== undefined ? opt.scores[c.id] : 75}%</span>
                     </span>
                   ))}
                 </div>
