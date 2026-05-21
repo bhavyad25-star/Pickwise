@@ -19,7 +19,8 @@ app.post('/ask-ai', async (req, res) => {
       return res.status(400).json({ error: "Missing optionName parameter" });
     }
 
-    const modelInstance = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Using gemini-1.5-pro for maximum intelligence matching
+    const modelInstance = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     const criteriaString = (criteriaList || []).map(c => c.id).join(', ');
 
     // ROUTE A: Automated Mix Recommendations Trigger

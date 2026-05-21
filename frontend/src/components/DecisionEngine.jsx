@@ -274,7 +274,7 @@ export default function DecisionEngine() {
             type="button"
             onClick={handleGetRecommendations}
             disabled={loadingRecs}
-            className="w-full mt-2 bg-gradient-to-r' from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+            className="w-full mt-2 'bg-gradient-to-r' from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
           >
             <Flame size={14} className={loadingRecs ? "animate-pulse" : ""} />
             <span>{loadingRecs ? "Mining Perfect Matches..." : `Auto-Suggest Ideal ${currentTopicData.title}`}</span>
