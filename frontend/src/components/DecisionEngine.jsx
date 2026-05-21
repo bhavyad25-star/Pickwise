@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Brain, Film, Utensils, Trophy, Palmtree, Sparkles, CheckCircle } from 'lucide-react';
+// Changed CheckCircle to Check to prevent Lucide runtime export crashes
+import { Plus, Trash2, Brain, Film, Utensils, Trophy, Palmtree, Sparkles, Check } from 'lucide-react';
 
 const PLATFORM_TOPICS = {
   movies: {
@@ -106,7 +107,7 @@ export default function DecisionEngine() {
         })
       });
 
-      if (!response.ok) throw new Error("Server went to sleep");
+      if (!response.ok) throw new Error("Gateway connection offline");
       const data = await response.json();
 
       setOptions(prev => prev.map(opt => {
@@ -144,7 +145,7 @@ export default function DecisionEngine() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
+    <div className="min-h-screen p-4 md:p-8 font-sans">
       <div className="max-w-xl mx-auto space-y-6">
         
         <header className="text-center space-y-2">
@@ -167,7 +168,7 @@ export default function DecisionEngine() {
                   className={`flex flex-col sm:flex-row items-center justify-center gap-1 py-2 px-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                     isSelected 
                       ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/10' 
-                      : 'text-slate-400 hover:bg-slate-950 hover:text-slate-200'
+                      : 'text-slate-400 hover:bg-slate-950/50 hover:text-slate-200'
                   }`}
                 >
                   <TopicIcon size={13} />
@@ -225,7 +226,8 @@ export default function DecisionEngine() {
 
         <div className="space-y-3.5">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 tracking-widest uppercase pl-0.5">
-            <CheckCircle size={11} className="text-emerald-500/80" />
+            {/* Safely uses Check icon instead of missing CheckCircle asset */}
+            <Check size={11} className="text-emerald-500/80" />
             <span>Matching Metrics Matrix Results</span>
           </div>
 
