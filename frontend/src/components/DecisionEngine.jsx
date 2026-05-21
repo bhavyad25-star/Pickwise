@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-// Changed CheckCircle to Check to prevent Lucide runtime export crashes
 import { Plus, Trash2, Brain, Film, Utensils, Trophy, Palmtree, Sparkles, Check } from 'lucide-react';
 
 const PLATFORM_TOPICS = {
@@ -92,17 +91,14 @@ export default function DecisionEngine() {
     setNewOptionName('');
     setLoadingOptionId(temporaryId);
 
-    const locationContext = currentTopicData.hasSubgenres 
-      ? `${currentTopicData.title} (${currentTopicData.subgenres.find(g => g.id === activeSubgenre)?.name})`
-      : currentTopicData.title;
-
     try {
       const response = await fetch('https://pickwise-zkt8.onrender.com/ask-ai', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           optionName: targetName,
-          domainContext: locationContext,
+          topic: activeTopic,
+          subgenre: currentTopicData.hasSubgenres ? activeSubgenre : null,
           criteriaList: currentTopicData.criteria
         })
       });
@@ -125,7 +121,7 @@ export default function DecisionEngine() {
         if (opt.id === temporaryId) {
           return { 
             ...opt, 
-            aiAnalysis: "Backend is booting up. Displaying default custom matching percentages below!" 
+            aiAnalysis: "Backend is booting up! Render free services take about 60 seconds to wake up from inactivity sleep. Please hit '+' again shortly!" 
           };
         }
         return opt;
@@ -145,7 +141,7 @@ export default function DecisionEngine() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 font-sans">
+    <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-xl mx-auto space-y-6">
         
         <header className="text-center space-y-2">
@@ -167,7 +163,7 @@ export default function DecisionEngine() {
                   onClick={() => setActiveTopic(topicKey)}
                   className={`flex flex-col sm:flex-row items-center justify-center gap-1 py-2 px-1 rounded-lg text-[10px] sm:text-xs font-bold transition-all ${
                     isSelected 
-                      ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/10' 
+                      ? 'bg-cyan-500 text-slate-950 shadow-md' 
                       : 'text-slate-400 hover:bg-slate-950/50 hover:text-slate-200'
                   }`}
                 >
@@ -226,7 +222,6 @@ export default function DecisionEngine() {
 
         <div className="space-y-3.5">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 tracking-widest uppercase pl-0.5">
-            {/* Safely uses Check icon instead of missing CheckCircle asset */}
             <Check size={11} className="text-emerald-500/80" />
             <span>Matching Metrics Matrix Results</span>
           </div>

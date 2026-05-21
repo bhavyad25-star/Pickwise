@@ -9,70 +9,58 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-app.get('/', (req, res) => {
-  res.send('PickWise Engine Backend Service is active and listening.');
-});
+const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 app.post('/ask-ai', async (req, res) => {
   try {
-    const { optionName, domainContext, criteriaList } = req.body;
+    const { optionName, topic, subgenre, criteriaList } = req.body;
 
-    if (!optionName || !domainContext || !criteriaList || !Array.isArray(criteriaList)) {
-      return res.status(400).json({ error: 'Missing mandatory request body parameters.' });
+    if (!optionName) {
+      return res.status(400).json({ error: "Missing optionName parameter" });
     }
 
-    // Explicitly mapping full descriptions to keys for strict JSON generation
-    const matrixEvaluationPrompt = `
-      You are an expert analytical choice validator engine for the app PickWise.
-      Evaluate the option: "${optionName}" within the specific domain context of: "${domainContext}".
+    const engineeredPrompt = `
+      You are PickWise AI, an expert analytical preference tracking engine.
+      The user wants to evaluate the item: "${optionName}" inside the tracking category: "${topic}" ${subgenre ? `with subgenre focus context: "${subgenre}"` : ''}.
       
-      Evaluate this option individually across each of these specific criteria factors:
-      ${criteriaList.map((c) => `- ${c.id}: ${c.name}`).join('\n')}
+      Tasks:
+      1. Explicitly state what specific genre, subgenre, or classification profile "${optionName}" belongs to.
+      2. Write a clear, brief 2-3 sentence breakdown explaining *why* it matches that specific genre profile.
+      3. Assign an intelligent match percentage score out of 100 for each evaluation metric: ${JSON.stringify(criteriaList)}.
       
-      Provide a comprehensive, crisp, paragraph-style written evaluation analysis (around 3 sentences max) explaining how well "${optionName}" fits this context.
-      
-      Additionally, assign an integer percentage score (0 to 100) for each factor.
-      
-      CRITICAL: You must return your response ONLY as a valid, raw JSON object. Do not include markdown code block formatting (like \`\`\`json).
-      The keys inside "suggestedScores" MUST exactly match the IDs provided below.
-      
-      Expected Scheme:
+      Return your response strictly as a JSON object matching this structure with NO markdown syntax codeblocks:
       {
-        "analysis": "Your detailed written analysis paragraph goes here.",
+        "analysis": "Genre: [Insert Detected Genre]. [Your 2-3 sentence explanation here detailing why it fits perfectly].",
         "suggestedScores": {
-          ${criteriaList.map((c) => `"${c.id}": [integer score between 0 and 100]`).join(',\n          ')}
+          "entertainment": 85,
+          "pacing": 90,
+          "critics": 75,
+          "rewatch": 80
         }
       }
     `;
 
-    const aiResponse = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: matrixEvaluationPrompt,
-    });
-
-    const responseTextClean = aiResponse.text.trim();
+    const modelInstance = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const responseResult = await modelInstance.generateContent(engineeredPrompt);
     
-    const cleanedJsonString = responseTextClean
-      .replace(/^```json/i, '')
-      .replace(/^```/, '')
-      .replace(/```$/, '')
+    const cleanedTextOutput = responseResult.response.text()
+      .replace(/```json/g, '')
+      .replace(/```/g, '')
       .trim();
 
-    const parsedMatrixPayload = JSON.parse(cleanedJsonString);
-    return res.json(parsedMatrixPayload);
+    const parsedJsonData = JSON.parse(cleanedTextOutput);
+    res.json(parsedJsonData);
 
-  } catch (error) {
-    console.error('Gemini Analytical Matrix Processing Fault: ', error);
-    return res.status(500).json({ 
-      error: 'Neural pipeline connection fault.',
-      details: error.message 
+  } catch (serverError) {
+    console.error("Backend error:", serverError);
+    res.status(500).json({ 
+      analysis: "The AI engine encountered a temporary processing delay. Please try resubmitting your option choice in a moment!",
+      suggestedScores: {}
     });
   }
 });
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
-  console.log(`Backend server successfully initialized active on port ${PORT}`);
+  console.log(`PickWise API running on port ${PORT}`);
 });
