@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Plus, Trash2, Brain, Film, Utensils, Trophy, Palmtree, Sparkles, CheckCircle } from 'lucide-react';
 
-// Pre-defined Custom Factors hidden behind the scenes for pure mathematical scoring
 const PLATFORM_TOPICS = {
   movies: {
     title: "Movies & Genres",
@@ -65,7 +64,6 @@ export default function DecisionEngine() {
 
   const currentTopicData = PLATFORM_TOPICS[activeTopic];
 
-  // Clear listed options whenever switching main categories to keep data perfectly synchronized
   useEffect(() => {
     setOptions([]);
   }, [activeTopic, activeSubgenre]);
@@ -77,10 +75,9 @@ export default function DecisionEngine() {
     const temporaryId = Date.now().toString();
     const targetName = newOptionName.trim();
     
-    // Set baseline score vector weights 
     const baseScores = {};
     currentTopicData.criteria.forEach(c => {
-      baseScores[c.id] = 75; // Pre-fills at a solid 75% match baseline
+      baseScores[c.id] = 75; 
     });
 
     const newOptionItem = {
@@ -94,7 +91,6 @@ export default function DecisionEngine() {
     setNewOptionName('');
     setLoadingOptionId(temporaryId);
 
-    // Context description for Gemini's prompt engineering
     const locationContext = currentTopicData.hasSubgenres 
       ? `${currentTopicData.title} (${currentTopicData.subgenres.find(g => g.id === activeSubgenre)?.name})`
       : currentTopicData.title;
@@ -106,11 +102,11 @@ export default function DecisionEngine() {
         body: JSON.stringify({
           optionName: targetName,
           domainContext: locationContext,
-          criteriaList: currentTopicData.criteria.map(c => c.name)
+          criteriaList: currentTopicData.criteria
         })
       });
 
-      if (!response.ok) throw new Error("Gateway sleep alert");
+      if (!response.ok) throw new Error("Server went to sleep");
       const data = await response.json();
 
       setOptions(prev => prev.map(opt => {
@@ -138,7 +134,6 @@ export default function DecisionEngine() {
     }
   };
 
-  // Silently computes the linear weighted match percentage in the background
   const calculateSilentScore = (optionScores) => {
     let combinedScore = 0;
     currentTopicData.criteria.forEach(c => {
@@ -152,7 +147,6 @@ export default function DecisionEngine() {
     <div className="min-h-screen bg-slate-950 text-slate-100 p-4 md:p-8 font-sans">
       <div className="max-w-xl mx-auto space-y-6">
         
-        {/* App Title Header */}
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-cyan-400 font-bold uppercase text-[10px] bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
             <Sparkles size={11} />
@@ -160,7 +154,6 @@ export default function DecisionEngine() {
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white">PickWise</h1>
           
-          {/* Main Workspace Category Selector Row */}
           <div className="grid grid-cols-4 gap-1 bg-slate-900 p-1.5 rounded-xl border border-slate-800/80 w-full mt-4 shadow-inner">
             {Object.keys(PLATFORM_TOPICS).map((topicKey) => {
               const item = PLATFORM_TOPICS[topicKey];
@@ -184,7 +177,6 @@ export default function DecisionEngine() {
             })}
           </div>
 
-          {/* Sub-Genre Row (Only shows up cleanly if Movies is selected) */}
           {currentTopicData.hasSubgenres && (
             <div className="flex flex-wrap gap-1 bg-slate-900/40 p-1 rounded-lg border border-slate-900/60 w-full mt-2">
               {currentTopicData.subgenres.map((genre) => {
@@ -208,7 +200,6 @@ export default function DecisionEngine() {
           )}
         </header>
 
-        {/* 1. INPUT ENTRY PORT AT THE TOP */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
           <form onSubmit={handleAddOption} className="space-y-2">
             <label className="block text-[11px] font-bold tracking-widest text-slate-400 uppercase pl-0.5">
@@ -232,7 +223,6 @@ export default function DecisionEngine() {
           </form>
         </div>
 
-        {/* 2. MATCH OUTPUT MODULE RESULTS LIST */}
         <div className="space-y-3.5">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 tracking-widest uppercase pl-0.5">
             <CheckCircle size={11} className="text-emerald-500/80" />
@@ -253,7 +243,6 @@ export default function DecisionEngine() {
               return (
                 <div key={opt.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3.5 transition-all">
                   
-                  {/* Item Summary Card Header */}
                   <div className="flex justify-between items-center gap-3">
                     <div>
                       <h3 className="text-base font-bold text-white tracking-tight">{opt.name}</h3>
@@ -280,7 +269,6 @@ export default function DecisionEngine() {
                     </div>
                   </div>
 
-                  {/* Gemini Smart Output Box */}
                   <div className="bg-slate-950 border border-slate-800/60 rounded-xl p-3">
                     <div className="flex items-center gap-1.5 text-cyan-400/90 text-[9px] font-bold uppercase tracking-wider mb-1">
                       <Brain size={11} className={isItemLoading ? "animate-pulse" : ""} />
@@ -299,7 +287,6 @@ export default function DecisionEngine() {
                     )}
                   </div>
 
-                  {/* Silent Factor Matrix Badges (Clean, hidden factors shown simple and slick) */}
                   <div className="flex flex-wrap gap-1.5 pt-1">
                     {currentTopicData.criteria.map((c) => (
                       <span 

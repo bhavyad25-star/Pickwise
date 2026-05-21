@@ -1,52 +1,39 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  body {
-    @apply m-0 p-0 min-h-screen font-sans text-white antialiased;
-    /* Animated Background */
-    background: linear-gradient(-45deg, #1e1b4b, #4338ca, #701a75, #831843);
-    background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
-  }
+/* Modern Tailwind v4 Global Base Layer overrides */
+html, body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  color: #f8fafc;
+  background-color: #020617;
+  
+  /* Smooth High-Performance Matrix Gradient Animation */
+  background: linear-gradient(-45deg, #020617, #0f172a, #1e1b4b, #020617);
+  background-size: 400% 400%;
+  animation: backgroundGradient 15s ease infinite;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes gradient {
+@keyframes backgroundGradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-@layer components {
-  /* THE GLASS CARD FIX */
-  .glass-card {
-    @apply bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl;
-  }
-
-  /* BIGGER, BETTER FONTS */
-  .font-heading {
-    font-family: 'Inter', system-ui, sans-serif;
-    @apply font-black tracking-tighter italic;
-  }
-
-  /* SLIDER STYLING - Fixes the "Price5" issue by adding margin */
-  input[type="range"] {
-    @apply w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer mt-4;
-  }
-
-  input[type="range"]::-webkit-slider-thumb {
-    @apply appearance-none w-6 h-6 bg-white rounded-full shadow-lg border-2 border-purple-500 transition-transform hover:scale-125;
-  }
-}
-
-/* SIDEBAR SCROLLBAR (For your Pasta/Naan list) */
-.custom-scrollbar::-webkit-scrollbar {
+/* Custom Scrollbar configurations to blend with our deep theme */
+::-webkit-scrollbar {
   width: 6px;
 }
-.custom-scrollbar::-webkit-scrollbar-track {
-  background: transparent;
+::-webkit-scrollbar-track {
+  background: #020617;
 }
-.custom-scrollbar::-webkit-scrollbar-thumb {
-  @apply bg-white/20 rounded-full;
+::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #334155;
 }
