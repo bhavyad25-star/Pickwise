@@ -20,18 +20,16 @@ app.post('/ask-ai', async (req, res) => {
     }
 
     const modelInstance = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-    
-    // Convert criteria array to a descriptive string for the AI weights
     const criteriaString = (criteriaList || []).map(c => c.id).join(', ');
 
-    // ROUTE A: The user clicked "Generate AI Suggestions"
+    // ROUTE A: Automated Mix Recommendations Trigger
     if (optionName === "RECOMMENDATION_REQUEST_TRIGGER") {
       const recPrompt = `
-        You are an expert personalized discovery engine for the category: "${topic}".
-        The user has configured a custom mix profile on a scale of 0 to 10:
+        You are an expert personalized discovery engine for the category framework: "${topic}".
+        The user has configured a custom mix profile layout on a scale of 0 to 10:
         ${JSON.stringify(genreMixProfile)}
 
-        Task: Recommend exactly 3 items (movies, places, sports, or food depending on the category context) that perfectly match this structural preference blend.
+        Task: Recommend exactly 3 specific real-world items that perfectly match this structural preference blend.
         
         Return your response STRICTLY as a clean JSON object with no markdown code blocks or backticks:
         {
@@ -51,7 +49,7 @@ app.post('/ask-ai', async (req, res) => {
       return res.json(JSON.parse(rawText));
     }
 
-    // ROUTE B: The user is checking a specific item title match
+    // ROUTE B: Title Cross-Match Matrix Verification
     const analysisPrompt = `
       You are an analytical matchmaking engine for the category framework: "${topic}".
       Target Item to evaluate: "${optionName}"
@@ -66,10 +64,10 @@ app.post('/ask-ai', async (req, res) => {
 
       Return your response STRICTLY as a clean JSON object with no markdown wrappers or backticks:
       {
-        "detectedGenre": "Primary characteristic or category profile",
+        "detectedGenre": "Primary characteristic profile",
         "analysis": "A concise 2-3 line breakdown summarizing why this choice matches or misses their specified mix layout.",
         "suggestedScores": {
-          ${(criteriaList || []).map(c => `"${c.id}": 80`).join(',\n          ')}
+          ${(criteriaList || []).map(c => `"${c.id}": 85`).join(',\n          ')}
         }
       }
     `;
@@ -87,19 +85,18 @@ app.post('/ask-ai', async (req, res) => {
   } catch (serverError) {
     console.error("Core Engine error:", serverError);
     
-    // Create safe fallback scores matching the current active criteria
     const fallbackScores = {};
     if (req.body.criteriaList) {
       req.body.criteriaList.forEach(c => { fallbackScores[c.id] = 70; });
     }
 
     res.status(500).json({ 
-      detectedGenre: "Error Matching",
-      analysis: "The AI was parsing complex data. Click the '+' button once more to retry!",
+      detectedGenre: "Error Syncing",
+      analysis: "The AI parsing engine timed out. Click the '+' button once more to run the live synchronization matrix instantly!",
       suggestedScores: fallbackScores,
       recommendedItems: [
-        { "title": "Dynamic Fallback Choice 1", "genre": "Balanced Blend", "reason": "A wonderful choice suited to your current configuration adjustments.", "score": "90%" },
-        { "title": "Dynamic Fallback Choice 2", "genre": "High Value Option", "reason": "Perfect selection matching your top-priority values.", "score": "85%" }
+        { "title": "Dynamic Fallback Item 1", "genre": "Balanced Blend", "reason": "Suited to your current configurations.", "score": "90%" },
+        { "title": "Dynamic Fallback Item 2", "genre": "High Value Option", "reason": "Matches your top-priority values.", "score": "85%" }
       ]
     });
   }

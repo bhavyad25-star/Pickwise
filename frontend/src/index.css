@@ -1,36 +1,21 @@
-/* Custom Animations and Global Rules for PickWise Theme Profile */
-html, body {
-  margin: 0;
-  padding: 0;
-  min-height: 100vh;
-  color: #f8fafc;
-  background-color: #020617;
-  
-  /* Premium Dark Dynamic Mesh Matrix Background */
-  background: linear-gradient(-45deg, #020617, #0f172a, #1e1b4b, #020617);
-  background-size: 400% 400%;
-  animation: pickwiseMatrixAnimation 15s ease infinite;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@import "tailwindcss";
+
+@layer base {
+  body {
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    font-family: ui-sans-serif, system-ui, sans-serif;
+    color: #e2e8f0;
+    -webkit-font-smoothing: antialiased;
+    background: linear-gradient(-45deg, #020617, #0f172a, #1e1b4b, #020617);
+    background-size: 400% 400%;
+    animation: gradient 15s ease infinite;
+  }
 }
 
-@keyframes pickwiseMatrixAnimation {
+@keyframes gradient {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
-}
-
-/* Custom Scrollbar settings */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #020617;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
 }

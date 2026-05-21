@@ -53,19 +53,15 @@ export default function DecisionEngine() {
   const [options, setOptions] = useState([]);
   const [newOptionName, setNewOptionName] = useState('');
   const [loadingOptionId, setLoadingOptionId] = useState(null);
-  
-  // Custom Dynamic Sliders Object State
   const [genreMix, setGenreMix] = useState({});
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecs, setLoadingRecs] = useState(false);
 
   const currentTopicData = PLATFORM_TOPICS[activeTopic];
 
-  // Initialize sliders dynamically whenever the active tab changes!
   useEffect(() => {
     const initialSliders = {};
     currentTopicData.sliders.forEach(sliderName => {
-      // Default configurations for easy visual demo mapping
       if (sliderName === 'Action' || sliderName === 'Spicy' || sliderName === 'Beach Vibe') {
         initialSliders[sliderName] = 8;
       } else if (sliderName === 'Romance' || sliderName === 'Sweet' || sliderName === 'Adventure') {
@@ -83,7 +79,6 @@ export default function DecisionEngine() {
     setGenreMix(prev => ({ ...prev, [sliderKey]: parseInt(val) }));
   };
 
-  // 1. Submit specific choice checking
   const handleAddOption = async (e) => {
     e.preventDefault();
     if (!newOptionName.trim()) return;
@@ -130,7 +125,8 @@ export default function DecisionEngine() {
             ...opt,
             aiAnalysis: data.analysis,
             detectedGenre: data.detectedGenre || "Profile Match",
-            scores: data.suggestedScores || opt.scores
+            scores: data.suggestedScores || opt.scores,
+            isLiveAI: true
           };
         }
         return opt;
@@ -141,19 +137,18 @@ export default function DecisionEngine() {
         if (opt.id === temporaryId) {
           return { 
             ...opt, 
-            detectedGenre: "Error Syncing",
-            aiAnalysis: "Make sure your backend code matches the updated template. Click the '+' button once more to execute instantly!" 
+            detectedGenre: "Backend Sleep Mode",
+            aiAnalysis: "Render instances sleep during inactivity. Since your backend URL is waking up, click the '+' button again right now to fetch computations!",
+            isLiveAI: false
           };
         }
         return opt;
       }));
     } finally {
-      loadingOptionId === temporaryId && setLoadingOptionId(null);
       setLoadingOptionId(null);
     }
   };
 
-  // 2. Automated Mix Suggestion Engine
   const handleGetRecommendations = async () => {
     setLoadingRecs(true);
     setRecommendations([]);
@@ -172,15 +167,32 @@ export default function DecisionEngine() {
       if (!response.ok) throw new Error("Recs generation failed");
       const data = await response.json();
       if (data.recommendedItems) {
-        setRecommendations(data.recommendedItems);
+        setRecommendations(data.recommendedItems.map(item => ({ ...item, isLiveAI: true })));
       }
     } catch (err) {
       console.error(err);
-      // Adaptive fallback logic for offline validation testing
-      setRecommendations([
-        { title: activeTopic === 'movies' ? "Mr. & Mrs. Smith" : activeTopic === 'food' ? "Spicy Honey Glazed Wings" : "Exotic Hybrid Resort", genre: "Custom Mix High-Match", reason: "Perfect structural alignment matching your dominant criteria variables.", score: "94%" },
-        { title: activeTopic === 'movies' ? "True Lies" : activeTopic === 'food' ? "Sweet Chili Chicken Burger" : "Adventure Coast Tour", genre: "Secondary Fit", reason: "Maintains high priorities while keeping baseline settings checked.", score: "86%" }
-      ]);
+      
+      if (activeTopic === 'movies') {
+        setRecommendations([
+          { title: "Inception", genre: "Sci-Fi / Action Blend", reason: "Matches your high preference for structural depth and heavy pacing.", score: "94%", isLiveAI: false },
+          { title: "The Dark Knight", genre: "Action / Drama Blend", reason: "High critical reception profile aligned with your tracking values.", score: "88%", isLiveAI: false }
+        ]);
+      } else if (activeTopic === 'food') {
+        setRecommendations([
+          { title: "Spicy Honey Glazed Wings", genre: "Spicy / Savory Mix", reason: "Matches your preference for intense heat balanced with a rich flavor profile.", score: "95%", isLiveAI: false },
+          { title: "Sweet Chili Thai Noodles", genre: "Sweet / Spicy Mix", reason: "An excellent option matching your speed and preparation constraints.", score: "86%", isLiveAI: false }
+        ]);
+      } else if (activeTopic === 'vacations') {
+        setRecommendations([
+          { title: "Amalfi Coast, Italy", genre: "Beach Vibe / Relaxation", reason: "A perfect destination combining safety with absolute visual quality.", score: "92%", isLiveAI: false },
+          { title: "Kyoto, Japan", genre: "Historical / Relaxation", reason: "High sightseeing score parameters matching your comfort criteria.", score: "89%", isLiveAI: false }
+        ]);
+      } else {
+        setRecommendations([
+          { title: "HIIT Circuit Training", genre: "Cardio / Stamina Intensive", reason: "Perfect selection matching your top health priorities.", score: "90%", isLiveAI: false },
+          { title: "Outdoor Rock Climbing", genre: "Adventure / Strength", reason: "Maintains high outdoor scores while keeping equipment costs low.", score: "85%", isLiveAI: false }
+        ]);
+      }
     } finally {
       setLoadingRecs(false);
     }
@@ -196,7 +208,7 @@ export default function DecisionEngine() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-8 text-slate-200 bg-[#0b0f19]">
+    <div className="min-h-screen p-4 md:p-8 text-slate-200">
       <div className="max-w-xl mx-auto space-y-6">
         
         <header className="text-center space-y-2">
@@ -262,7 +274,7 @@ export default function DecisionEngine() {
             type="button"
             onClick={handleGetRecommendations}
             disabled={loadingRecs}
-            className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+            className="w-full mt-2 bg-gradient-to-r' from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
           >
             <Flame size={14} className={loadingRecs ? "animate-pulse" : ""} />
             <span>{loadingRecs ? "Mining Perfect Matches..." : `Auto-Suggest Ideal ${currentTopicData.title}`}</span>
@@ -271,16 +283,27 @@ export default function DecisionEngine() {
 
         {/* AI Recommendations Stream Panel */}
         {recommendations.length > 0 && (
-          <div className="bg-slate-900/40 border border-dashed border-cyan-500/20 rounded-2xl p-4 space-y-3 animate-fadeIn">
-            <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
-              <Sparkles size={12} />
-              <span>Top AI Picks for your Mix</span>
+          <div className="bg-slate-900/40 border border-dashed border-cyan-500/20 rounded-2xl p-4 space-y-3">
+            <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center justify-between">
+              <div className="flex items-center gap-1.5">
+                <Sparkles size={12} />
+                <span>Top AI Picks for your Mix</span>
+              </div>
             </div>
             <div className="space-y-2">
               {recommendations.map((rec, index) => (
                 <div key={index} className="bg-slate-950/80 border border-slate-800/80 p-3 rounded-xl flex justify-between items-start gap-4">
                   <div className="space-y-0.5">
-                    <h4 className="text-xs font-black text-white">{rec.title}</h4>
+                    <div className="flex items-center gap-2">
+                      <h4 className="text-xs font-black text-white">{rec.title}</h4>
+                      <span className={`text-[8px] font-bold px-1.5 py-0.2 rounded font-mono ${
+                        rec.isLiveAI 
+                          ? 'bg-cyan-500/10 text-cyan-400 border border-cyan-500/20' 
+                          : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'
+                      }`}>
+                        {rec.isLiveAI ? 'LIVE GEMINI' : 'SERVER SLEEPING (FALLBACK)'}
+                      </span>
+                    </div>
                     <p className="text-[10px] text-slate-400 font-medium font-mono">Profile: {rec.genre}</p>
                     <p className="text-[11px] text-slate-500 leading-snug pt-1">{rec.reason}</p>
                   </div>
@@ -304,7 +327,7 @@ export default function DecisionEngine() {
                 type="text"
                 value={newOptionName}
                 onChange={(e) => setNewOptionName(e.target.value)}
-                placeholder={`Enter custom title item name...`}
+                placeholder="Enter custom title item name..."
                 className="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500/50 w-full text-slate-200 placeholder:text-slate-600"
               />
               <button
@@ -329,7 +352,7 @@ export default function DecisionEngine() {
             const isItemLoading = loadingOptionId === opt.id;
 
             return (
-              <div key={opt.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3.5 animate-fadeIn">
+              <div key={opt.id} className="bg-slate-900/60 border border-slate-800 rounded-2xl p-4 shadow-lg space-y-3.5">
                 <div className="flex justify-between items-center gap-3">
                   <div>
                     <h3 className="text-base font-bold text-white tracking-tight">{opt.name}</h3>
@@ -346,6 +369,7 @@ export default function DecisionEngine() {
                       <span className="text-lg font-black font-mono text-cyan-400">{matchPercentage}%</span>
                     </div>
                     <button
+                      type="button"
                       onClick={() => setOptions(prev => prev.filter(o => o.id !== opt.id))}
                       className="text-slate-600 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
                     >
@@ -366,7 +390,7 @@ export default function DecisionEngine() {
                   )}
                 </div>
 
-                {/* DYNAMIC METRIC LABELS FIXED HERE */}
+                {/* Dynamic Labels Render Panel */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {currentTopicData.criteria.map((c) => (
                     <span key={c.id} className="text-[9px] font-semibold bg-slate-950 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-md">
