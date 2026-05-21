@@ -1,29 +1,27 @@
-@import "tailwindcss";
-
-/* Modern Tailwind v4 Global Base Layer overrides */
+/* Standard global reset configuration */
 html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   color: #f8fafc;
   background-color: #020617;
   
-  /* Smooth High-Performance Matrix Gradient Animation */
+  /* High Performance Smooth Dynamic Matrix Background */
   background: linear-gradient(-45deg, #020617, #0f172a, #1e1b4b, #020617);
   background-size: 400% 400%;
-  animation: backgroundGradient 15s ease infinite;
+  animation: pickwiseMatrixAnimation 15s ease infinite;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-@keyframes backgroundGradient {
+@keyframes pickwiseMatrixAnimation {
   0% { background-position: 0% 50%; }
   50% { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
 
-/* Custom Scrollbar configurations to blend with our deep theme */
+/* Scrollbar layout styles matching our deep dashboard framework */
 ::-webkit-scrollbar {
   width: 6px;
 }
