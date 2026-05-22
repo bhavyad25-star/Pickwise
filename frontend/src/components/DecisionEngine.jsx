@@ -62,7 +62,12 @@ export default function DecisionEngine() {
   useEffect(() => {
     const initialSliders = {};
     currentTopicData.sliders.forEach(sliderName => {
-      initialSliders[sliderName] = sliderName === 'Horror' ? 8 : 0;
+      // Set default profiles dynamically to provide a good starting layout
+      if (sliderName === 'Horror' || sliderName === 'Spicy' || sliderName === 'Beach Vibe' || sliderName === 'Cardio') {
+        initialSliders[sliderName] = 8;
+      } else {
+        initialSliders[sliderName] = 0;
+      }
     });
     setGenreMix(initialSliders);
     setOptions([]);
@@ -124,6 +129,16 @@ export default function DecisionEngine() {
       }));
     } catch (error) {
       console.error(error);
+      setOptions(prev => prev.map(opt => {
+        if (opt.id === temporaryId) {
+          return { 
+            ...opt, 
+            detectedGenre: "Sync Error",
+            aiAnalysis: "Render is spinning up. Try re-adding your choice again in a few seconds."
+          };
+        }
+        return opt;
+      }));
     } finally {
       setLoadingOptionId(null);
     }
@@ -167,10 +182,12 @@ export default function DecisionEngine() {
   return (
     <div className="min-h-screen bg-[#030712] p-4 md:p-8 text-slate-200">
       <div className="max-w-xl mx-auto space-y-6">
+        
+        {/* Upper Brand Header */}
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-cyan-400 font-bold uppercase text-[10px] bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
             <Sparkles size={11} />
-            <span>Multi-Matrix Preference Engine</span>
+            <span>Multi-Matrix Hybrid Preference Engine</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white">PickWise</h1>
           
@@ -196,6 +213,7 @@ export default function DecisionEngine() {
           </div>
         </header>
 
+        {/* Dynamic Category Sliders Configuration Block */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
           <div className="flex items-center gap-1.5 border-b border-slate-800 pb-2">
             <Sliders size={14} className="text-cyan-400" />
@@ -229,13 +247,14 @@ export default function DecisionEngine() {
             type="button"
             onClick={handleGetRecommendations}
             disabled={loadingRecs}
-            className="w-full mt-2 bg-linear-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
+            className="w-full mt-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold py-2.5 px-4 rounded-xl text-xs flex items-center justify-center gap-2 transition-all shadow-md active:scale-[0.98]"
           >
             <Flame size={14} className={loadingRecs ? "animate-pulse" : ""} />
             <span>{loadingRecs ? "Mining Perfect Matches..." : `Auto-Suggest Ideal ${currentTopicData.title}`}</span>
           </button>
         </div>
 
+        {/* AI Recommendations Panel */}
         {recommendations.length > 0 && (
           <div className="bg-slate-900/40 border border-dashed border-cyan-500/20 rounded-2xl p-4 space-y-3">
             <div className="text-[10px] font-black uppercase tracking-widest text-cyan-400 flex items-center gap-1.5">
@@ -264,6 +283,7 @@ export default function DecisionEngine() {
           </div>
         )}
 
+        {/* Input Custom Submission Panel */}
         <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
           <form onSubmit={handleAddOption} className="space-y-2">
             <label className="block text-[11px] font-bold tracking-widest text-slate-400 uppercase pl-0.5">
@@ -284,6 +304,7 @@ export default function DecisionEngine() {
           </form>
         </div>
 
+        {/* Results Timeline Matrix */}
         <div className="space-y-3.5">
           <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500 tracking-widest uppercase pl-0.5">
             <Check size={11} className="text-emerald-500/80" />
@@ -326,6 +347,7 @@ export default function DecisionEngine() {
                   )}
                 </div>
 
+                {/* Tracking Metrics Sub-Labels */}
                 <div className="flex flex-wrap gap-1.5 pt-1">
                   {currentTopicData.criteria.map((c) => (
                     <span key={c.id} className="text-[9px] font-semibold bg-slate-950 border border-slate-800 text-slate-400 px-2 py-0.5 rounded-md">

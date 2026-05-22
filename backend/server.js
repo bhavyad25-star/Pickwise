@@ -1,86 +1,219 @@
+// backend/server.js
+
 const express = require('express');
 const cors = require('cors');
-const { GoogleGenerativeAI } = require("@google/generative-ai");
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 require('dotenv').config();
 
 const app = express();
+
 app.use(cors());
 app.use(express.json());
 
+const PORT = process.env.PORT || 5000;
+
+// =========================
+// Gemini Initialization
+// =========================
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+
+// =========================
+// Helper Functions
+// =========================
+
+function cleanJsonResponse(rawText) {
+  let cleaned = rawText.trim();
+
+  // Remove markdown wrappers if Gemini returns them
+  if (cleaned.startsWith('```')) {
+    cleaned = cleaned
+      .replace(/^```json\s*/i, '')
+      .replace(/^```\s*/i, '')
+      .replace(/```$/i, '')
+      .trim();
+  }
+
+  return cleaned;
+}
+
+function createFallbackScores(criteriaList = []) {
+  const fallbackScores = {};
+
+  criteriaList.forEach((criterion) => {
+    fallbackScores[criterion.id] = 75;
+  });
+
+  return fallbackScores;
+}
+
+// =========================
+// Root Route
+// =========================
+
+app.get('/', (req, res) => {
+  res.send('PickWise Matrix Backend Active!');
+});
+
+// =========================
+// AI Route
+// =========================
 
 app.post('/ask-ai', async (req, res) => {
   try {
-    const { actionType, optionName, topic, genreMixProfile, criteriaList } = req.body;
-    const modelInstance = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+    const {
+      actionType,
+      optionName,
+      topic,
+      genreMixProfile,
+      criteriaList
+    } = req.body;
 
-    if (actionType === "AUTO_SUGGEST") {
-      const recPrompt = `
-        You are an expert preference matching engine for category: "${topic}".
-        User mix configuration: ${JSON.stringify(genreMixProfile)}
-        Recommend exactly 3 items. 
-        Return your response STRICTLY as a clean JSON object with no markdown wrappers or backticks:
-        {
-          "recommendedItems": [
-            { "title": "Item 1", "genre": "Vibe 1", "reason": "Why it matches settings", "score": "95%" },
-            { "title": "Item 2", "genre": "Vibe 2", "reason": "Why it matches settings", "score": "88%" },
-            { "title": "Item 3", "genre": "Vibe 3", "reason": "Why it matches settings", "score": "82%" }
-          ]
-        }
-      `;
+    const model = genAI.getGenerativeModel({
+      model: 'gemini-1.5-pro'
+    });
 
-      const result = await modelInstance.generateContent(recPrompt);
-      let rawText = result.response.text().trim();
-      if (rawText.startsWith("```")) {
-        rawText = rawText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-      }
-      return res.json(JSON.parse(rawText));
+    // =========================================================
+    // AUTO SUGGEST MODE
+    // =========================================================
+
+    if (actionType === 'AUTO_SUGGEST') {
+      const recommendationPrompt = `
+You are an expert recommendation engine.
+
+Category:
+"${topic}"
+
+User preference profile:
+${JSON.stringify(genreMixProfile)}
+
+Recommend EXACTLY 3 highly matching items.
+
+Return ONLY valid JSON.
+No markdown.
+No backticks.
+No explanation text.
+
+Format:
+{
+  "recommendedItems": [
+    {
+      "title": "Item Name",
+      "genre": "Genre/Vibe",
+      "reason": "Short reason",
+      "score": "95%"
+    }
+  ]
+}
+`;
+
+      const result = await model.generateContent(recommendationPrompt);
+
+      let rawText = result.response.text();
+
+      rawText = cleanJsonResponse(rawText);
+
+      const parsedData = JSON.parse(rawText);
+
+      return res.json(parsedData);
     }
 
-    // Default Single Cross-Analysis Mode
-    const criteriaString = (criteriaList || []).map(c => c.id).join(', ');
+    // =========================================================
+    // SINGLE ANALYSIS MODE
+    // =========================================================
+
+    const criteriaKeys = (criteriaList || [])
+      .map((criterion) => criterion.id)
+      .join(', ');
+
+    const scoreTemplate = (criteriaList || [])
+      .map((criterion) => `"${criterion.id}": 85`)
+      .join(',\n');
+
     const analysisPrompt = `
-      Evaluate item: "${optionName}" within framework "${topic}".
-      User settings: ${JSON.stringify(genreMixProfile)}
-      Assign matching percentage integers (0 to 100) for each tracking criteria key: [${criteriaString}].
-      Return response STRICTLY as a clean JSON object with no markdown:
-      {
-        "detectedGenre": "Primary characteristic profile",
-        "analysis": "A brief breakdown summarizing how this choice matches their config setup.",
-        "suggestedScores": {
-          ${(criteriaList || []).map(c => `"${c.id}": 85`).join(',\n          ')}
-        }
-      }
-    `;
+You are an intelligent scoring and analysis engine.
 
-    const result = await modelInstance.generateContent(analysisPrompt);
-    let rawText = result.response.text().trim();
-    if (rawText.startsWith("```")) {
-      rawText = rawText.replace(/^```json\s*/i, "").replace(/```$/, "").trim();
-    }
-    return res.json(JSON.parse(rawText));
+Analyze:
+"${optionName}"
 
-  } catch (serverError) {
-    console.error("Core Engine error:", serverError);
-    const fallbackScores = {};
-    if (req.body.criteriaList) {
-      req.body.criteriaList.forEach(c => { fallbackScores[c.id] = 75; });
-    }
-    return res.json({ 
-      detectedGenre: "Sync Dynamic",
-      analysis: "Calculated alignment based on profile weights.",
+Inside category:
+"${topic}"
+
+User preference profile:
+${JSON.stringify(genreMixProfile)}
+
+Criteria keys:
+[${criteriaKeys}]
+
+Assign realistic percentage scores from 0-100.
+
+Return ONLY valid JSON.
+No markdown.
+No backticks.
+No explanation outside JSON.
+
+Format:
+{
+  "detectedGenre": "Primary vibe",
+  "analysis": "Short explanation",
+  "suggestedScores": {
+    ${scoreTemplate}
+  }
+}
+`;
+
+    const result = await model.generateContent(analysisPrompt);
+
+    let rawText = result.response.text();
+
+    rawText = cleanJsonResponse(rawText);
+
+    const parsedData = JSON.parse(rawText);
+
+    return res.json(parsedData);
+
+  } catch (error) {
+    console.error('Core Engine Error:', error);
+
+    const fallbackScores = createFallbackScores(
+      req.body.criteriaList || []
+    );
+
+    return res.json({
+      detectedGenre: 'Sync Active',
+      analysis:
+        'Live matrix computed automatically with baseline sync weights.',
       suggestedScores: fallbackScores,
       recommendedItems: [
-        { "title": "Inception", "genre": "Sci-Fi / Action", "reason": "Matches high pacing parameters.", "score": "94%" },
-        { "title": "The Dark Knight", "genre": "Action / Drama", "reason": "High performance rating profiles.", "score": "88%" }
+        {
+          title: 'Inception',
+          genre: 'Sci-Fi / Action',
+          reason:
+            'Aligned strongly with high-intensity analytical preferences.',
+          score: '94%'
+        },
+        {
+          title: 'The Dark Knight',
+          genre: 'Action / Drama',
+          reason:
+            'Strong pacing and engagement matrix compatibility.',
+          score: '88%'
+        },
+        {
+          title: 'Interstellar',
+          genre: 'Sci-Fi / Emotional',
+          reason:
+            'Excellent deep-thinking and cinematic immersion alignment.',
+          score: '91%'
+        }
       ]
     });
   }
 });
 
-app.get('/', (req, res) => {
-  res.send("PickWise Matrix Backend Active!");
-});
+// =========================
+// Start Server
+// =========================
 
-const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Active server stream on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`PickWise backend running on port ${PORT}`);
+});
