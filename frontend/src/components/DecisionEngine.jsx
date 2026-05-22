@@ -124,16 +124,6 @@ export default function DecisionEngine() {
       }));
     } catch (error) {
       console.error(error);
-      setOptions(prev => prev.map(opt => {
-        if (opt.id === temporaryId) {
-          return { 
-            ...opt, 
-            detectedGenre: "Error Syncing",
-            aiAnalysis: "Click the trigger once more to retry verification layer matrix connection."
-          };
-        }
-        return opt;
-      }));
     } finally {
       setLoadingOptionId(null);
     }
@@ -180,7 +170,7 @@ export default function DecisionEngine() {
         <header className="text-center space-y-2">
           <div className="inline-flex items-center gap-2 text-cyan-400 font-bold uppercase text-[10px] bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
             <Sparkles size={11} />
-            <span>Multi-Matrix Hybrid Preference Engine</span>
+            <span>Multi-Matrix Preference Engine</span>
           </div>
           <h1 className="text-3xl font-black tracking-tight text-white">PickWise</h1>
           
